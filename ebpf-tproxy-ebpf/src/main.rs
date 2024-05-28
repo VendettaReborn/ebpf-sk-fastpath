@@ -3,7 +3,8 @@
 
 use aya_ebpf::{
     bindings::{
-        sk_action::SK_PASS, BPF_ANY, BPF_SOCK_OPS_ACTIVE_ESTABLISHED_CB, BPF_SOCK_OPS_PASSIVE_ESTABLISHED_CB, BPF_SOCK_OPS_STATE_CB
+        sk_action::SK_PASS, BPF_ANY, BPF_F_INGRESS, BPF_SOCK_OPS_ACTIVE_ESTABLISHED_CB,
+        BPF_SOCK_OPS_PASSIVE_ESTABLISHED_CB, BPF_SOCK_OPS_STATE_CB,
     },
     macros::{map, sk_msg, sock_ops},
     maps::SockHash,
@@ -60,7 +61,7 @@ fn try_tproxy_sockops(ctx: SockOpsContext) -> Result<u32, u32> {
                 // TODO: log tuple here
                 info!(
                     &ctx,
-                    "from {:i}:{} => {:i}:{}",
+                    "[sockops] from {:i}:{} => {:i}:{}",
                     tuple.src.addr.swap_bytes(),
                     tuple.src.port,
                     tuple.dst.addr.swap_bytes(),
@@ -91,7 +92,31 @@ pub fn tproxy_msg(ctx: SkMsgContext) -> u32 {
 
 fn try_tproxy_msg(ctx: SkMsgContext) -> Result<u32, u32> {
     // TODO: log msg's tuple here, verify the tuple also shows in the INTERCEPT_EGRESS_V4
-    info!(&ctx, "tproxy_msg");
+    let sk_msg_md = unsafe { &mut *(ctx.msg) };
+    let family = sk_msg_md.family;
+    if family == AF_INET {
+        let tuple = Ipv4Tuple::new(
+            family,
+            Ipv4Addr::new(sk_msg_md.local_ip4, sk_msg_md.local_port),
+            Ipv4Addr::new(sk_msg_md.remote_ip4, sk_msg_md.remote_port.swap_bytes()),
+        );
+        info!(
+            &ctx,
+            "[sk_msg] {:i}:{} => {:i}:{}",
+            tuple.src.addr.swap_bytes(),
+            tuple.src.port,
+            tuple.dst.addr.swap_bytes(),
+            tuple.dst.port,
+        );
+        // 16777343 is the u32 of 127.0.0.1
+        if tuple.src.addr == 16777343 && tuple.dst.addr == 16777343 {
+            let mut target_sk = tuple.reverse();
+            let ret = INTERCEPT_EGRESS_V4.redirect_msg(&ctx, &mut target_sk, BPF_F_INGRESS as _);
+            info!(&ctx, "redirect_msg ret: {}", ret);
+            return Ok(ret as _);
+        }
+    }
+
     Ok(SK_PASS)
 }
 

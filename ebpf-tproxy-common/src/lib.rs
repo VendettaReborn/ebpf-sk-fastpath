@@ -25,6 +25,14 @@ impl Ipv4Tuple {
     pub fn new(protocol: u32, src: Ipv4Addr, dst: Ipv4Addr) -> Ipv4Tuple {
         Ipv4Tuple { protocol, src, dst }
     }
+
+    pub fn reverse(self) -> Self {
+        Ipv4Tuple {
+            protocol: self.protocol,
+            src: self.dst,
+            dst: self.src,
+        }
+    }
 }
 
 pub struct Ipv6Addr {
@@ -47,5 +55,13 @@ pub struct Ipv6Tuple {
 impl Ipv6Tuple {
     pub fn new(protocol: u32, src: Ipv6Addr, dst: Ipv6Addr) -> Ipv6Tuple {
         Ipv6Tuple { protocol, src, dst }
+    }
+
+    pub fn reverse(self) -> Self {
+        Ipv6Tuple {
+            protocol: self.protocol,
+            src: self.dst,
+            dst: self.src,
+        }
     }
 }
