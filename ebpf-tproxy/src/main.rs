@@ -1,4 +1,4 @@
-use aya::maps::{SockHash, SockMap};
+use aya::maps::SockHash;
 use aya::programs::{SkMsg, SockOps};
 use aya::{include_bytes_aligned, Bpf};
 use aya_log::BpfLogger;
@@ -7,6 +7,7 @@ use common::Ipv4Tuple;
 use log::{debug, info, warn};
 use tokio::signal;
 
+#[allow(unused)]
 mod common;
 
 #[derive(Debug, Parser)]
@@ -63,6 +64,8 @@ async fn main() -> Result<(), anyhow::Error> {
         program.load()?;
         program.attach(&map_fd)?;
     }
+
+    // TODO: support ipv6
 
     info!("Waiting for Ctrl-C...");
     signal::ctrl_c().await?;
