@@ -38,6 +38,9 @@ mount -t cgroup2 -o nsdelegate none /sys/fs/cgroup/unified
 RUST_LOG=info cargo xtask run
 ```
 
+and on another terminal, run `curl 127.0.0.1:your_port`
+and on the third terminal, verify the program by `bpftrace bpftrace -e 'kprobe:tcp_bpf_update_proto { printf("%s: %d\n", comm, pid); }'`
+
 
 ## How it works 
 
