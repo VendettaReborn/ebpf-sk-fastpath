@@ -1,16 +1,16 @@
 [package]
-name = "ebpf-tproxy-ebpf"
+name = "ebpf-sk-fastpath-ebpf"
 version = "0.1.0"
 edition = "2021"
 
 [dependencies]
 aya-ebpf = "0.1.0"
 aya-log-ebpf = "0.1.0"
-ebpf-tproxy-common = { path = "../ebpf-tproxy-common" }
+ebpf-sk-fastpath-common = { path = "../ebpf-sk-fastpath-common" }
 network-types = "0.0.4"
 
 [[bin]]
-name = "ebpf-tproxy"
+name = "ebpf-sk-fastpath"
 path = "src/main.rs"
 
 [profile.dev]

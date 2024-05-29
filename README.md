@@ -1,4 +1,4 @@
-# ebpf-tproxy
+# ebpf-sk-fastpath
 
 ## Prerequisites
 
