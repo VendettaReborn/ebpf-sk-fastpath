@@ -95,4 +95,11 @@ mod tests {
         assert!(buf.filled().len() == 10);
         assert!(read_buf.len() == 2);
     }
+
+    #[test]
+    fn t2() {
+        let addr: u32 = 16777343;
+        let addr = addr.to_be();
+        println!("{:x?}", addr);
+    }
 }
