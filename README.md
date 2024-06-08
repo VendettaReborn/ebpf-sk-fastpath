@@ -72,3 +72,18 @@ Tips:
     sk: the kernel structure that links skb and process(task_struct).
     route: for egress, the routing is to find the outbound interface, for ingress, the routing is to forward the traffic, or to pass the skb to the sk that it belongs to.
 ```
+
+## TODOS
+
+you must notice that, we hardcode the traffic to be intercepted: 
+1. from one specific interface.
+2. redirect to lo interface
+3. the destination must be `1.1.1.1`
+
+let's call the step to choose the redirected interface and the matching traffic `reroute`, since it's different with linux routing system, but is very similar.
+
+we actually can do better, there are a few improvements that can be done easily: 
+
+1. iterate a list of rules similar to iptables, each has a type like `match the dst`, `match the sport` etc.
+2. pre-compile the rules into a much compat structure and perform a rule search of O(1) time complexity. but we must notice that, the constant of O(1) may be very large, according to the num of rules, unless u are quite sure about its advantage, don't use it. the details algorithm can be found [here](https://mbertrone.github.io/documents/21-Securing_Linux_with_a_Faster_and_Scalable_Iptables.pdf)
+3. attach each rule with the action of either DROP the packet, or redirect it to one interface.
