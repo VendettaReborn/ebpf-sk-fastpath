@@ -58,6 +58,7 @@ fn try_tproxy_sockops(ctx: SockOpsContext) -> Result<u32, u32> {
                 let mut tuple = get_tuple_v4(&ctx);
                 // only handle local => local connection
                 // TODO: use a map of rules to do the verdict
+                // you may refer to: https://mbertrone.github.io/documents/21-Securing_Linux_with_a_Faster_and_Scalable_Iptables.pdf
                 if !(tuple.src.addr == 0x100007f && tuple.dst.addr == 0x100007f) {
                     return Ok(0);
                 }
