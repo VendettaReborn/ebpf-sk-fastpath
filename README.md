@@ -73,12 +73,80 @@ Tips:
     route: for egress, the routing is to find the outbound interface, for ingress, the routing is to forward the traffic, or to pass the skb to the sk that it belongs to.
 ```
 
+## Benchmarks
+
+we can run both iperf3 server and client with the following command 
+
+server: `iperf3 -s -4` (since we only supports ipv4 now, you can add support of ipv6 by yourself)
+
+client: `iperf3 -c -4 127.0.0.1 -t 10`
+
+### throughput
+
+**before using fastpath**
+
+```txt
+[ ID] Interval           Transfer     Bitrate         Retr  Cwnd
+[  5]   0.00-1.00   sec  3.78 GBytes  32.4 Gbits/sec    0    639 KBytes
+[  5]   1.00-2.00   sec  3.05 GBytes  26.2 Gbits/sec    0    639 KBytes
+[  5]   2.00-3.00   sec  2.77 GBytes  23.8 Gbits/sec    0    639 KBytes
+[  5]   3.00-4.00   sec  3.40 GBytes  29.2 Gbits/sec    0   2.50 MBytes
+[  5]   4.00-5.00   sec  4.03 GBytes  34.6 Gbits/sec    0   2.50 MBytes
+[  5]   5.00-6.00   sec  3.82 GBytes  32.8 Gbits/sec    0   2.50 MBytes
+[  5]   6.00-7.00   sec  3.78 GBytes  32.5 Gbits/sec    0   2.50 MBytes
+[  5]   7.00-8.00   sec  3.45 GBytes  29.7 Gbits/sec    0   2.50 MBytes
+...
+```
+
+**after using fastpath** 
+
+```txt
+[ ID] Interval           Transfer     Bitrate         Retr  Cwnd
+[  5]   0.00-1.00   sec  4.88 GBytes  41.9 Gbits/sec    0    162 KBytes
+[  5]   1.00-2.00   sec  4.78 GBytes  41.1 Gbits/sec    0    162 KBytes
+[  5]   2.00-3.00   sec  5.02 GBytes  43.2 Gbits/sec    0    162 KBytes
+[  5]   3.00-4.00   sec  5.36 GBytes  46.0 Gbits/sec    0    162 KBytes
+[  5]   4.00-5.00   sec  4.87 GBytes  41.8 Gbits/sec    0    162 KBytes
+[  5]   5.00-6.00   sec  4.87 GBytes  41.8 Gbits/sec    0    162 KBytes
+[  5]   6.00-7.00   sec  4.86 GBytes  41.8 Gbits/sec    0    162 KBytes
+[  5]   7.00-8.00   sec  4.77 GBytes  41.0 Gbits/sec    0    162 KBytes
+[  5]   8.00-9.00   sec  4.93 GBytes  42.4 Gbits/sec    0    162 KBytes
+[  5]   9.00-10.00  sec  4.99 GBytes  42.9 Gbits/sec    0    162 KBytes
+...
+```
+
+this is just quick verfication of the throughput leap brought by sk_msg's fastpath, to give a more comprehensive benchmark result, we may check other metrics:
+1. cpu utilization rate
+2. latency
+
+to test the cpu utlization rate, the easiest way is to add `time` before the client's command, aka run `time iperf3 --client 127.0.0.1 -t 10`, and we can get the utilization rate for each case
+
+### cpu utlization rate
+
+**before using fastpath**
+
+```txt
+iperf3 --client 127.0.0.1 -t 10  0.04s user 7.41s system 74% cpu 10.006 total
+```
+
+**after using fastpath** 
+
+```txt
+iperf3 --client 127.0.0.1 -t 10  0.06s user 9.86s system 99% cpu 10.005 total
+```
+
+comparing the two scenerio, we can basicaly conclude: when the fastpath of sk_msg is enabled, cpu is generally 100% busy with the send/recv job, and that leads to a great throughput performance improvement.
+
+It's reasonable, since the way that when the verdict result is `redirection`, the skb is just stored in a queue that belongs to the other end of the connection, and that end is immediately notified with `sk_data_ready` called. So the kernel doesn't need to poll the backlog of the loopback interface, which is a napi mechanism that cannot fully utilize the cpu.
+
+
 ## TODOS
 
 you must notice that, we hardcode the traffic to be intercepted: 
 1. from one specific interface.
 2. redirect to lo interface
 3. the destination must be `1.1.1.1`
+4. measure the latency
 
 let's call the step to choose the redirected interface and the matching traffic `reroute`, since it's different with linux routing system, but is very similar.
 

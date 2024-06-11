@@ -30,6 +30,14 @@ pub fn get_tuple_v6(ctx: &SockOpsContext) -> Ipv6Tuple {
     Ipv6Tuple::new(ctx.family(), src, dst)
 }
 
+const fn code_to_str(code: i64) -> &'static str {
+    match code {
+        0 => "SK_DROP",
+        1 => "SK_PASS",
+        _ => "UNKNOWN",
+    }
+}
+
 #[map]
 static INTERCEPT_EGRESS_V4: SockHash<Ipv4Tuple> = SockHash::with_max_entries(1024, 0);
 
@@ -140,9 +148,11 @@ fn try_tproxy_msg(ctx: SkMsgContext) -> Result<u32, u32> {
         );
         // 16777343 is the u32 of 127.0.0.1
         if tuple.src.addr == 0x100007f && tuple.dst.addr == 0x100007f {
+            // FIXME: the other side of the sk might be a different family, so we need to check both V4 and V6 sock_map **in the real world**
             let mut target_sk = tuple.reverse();
             let ret = INTERCEPT_EGRESS_V4.redirect_msg(&ctx, &mut target_sk, BPF_F_INGRESS as _);
-            info!(&ctx, "redirect_msg ret: {}", ret);
+            let ret_str = code_to_str(ret);
+            info!(&ctx, "redirect_msg verdict result: {}", ret_str);
             return Ok(ret as _);
         }
     }
