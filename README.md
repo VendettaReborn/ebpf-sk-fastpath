@@ -85,6 +85,8 @@ client: `iperf3 -c -4 127.0.0.1 -t 10`
 
 **before using fastpath**
 
+cmd: `iperf3 --client 127.0.0.1 -t 10`
+
 ```txt
 [ ID] Interval           Transfer     Bitrate         Retr  Cwnd
 [  5]   0.00-1.00   sec  3.78 GBytes  32.4 Gbits/sec    0    639 KBytes
@@ -100,6 +102,10 @@ client: `iperf3 -c -4 127.0.0.1 -t 10`
 
 **after using fastpath** 
 
+cmd: `iperf3 --client 127.0.0.1 -t 10`
+
+result: 
+
 ```txt
 [ ID] Interval           Transfer     Bitrate         Retr  Cwnd
 [  5]   0.00-1.00   sec  4.88 GBytes  41.9 Gbits/sec    0    162 KBytes
@@ -113,6 +119,23 @@ client: `iperf3 -c -4 127.0.0.1 -t 10`
 [  5]   8.00-9.00   sec  4.93 GBytes  42.4 Gbits/sec    0    162 KBytes
 [  5]   9.00-10.00  sec  4.99 GBytes  42.9 Gbits/sec    0    162 KBytes
 ...
+```
+
+**with proxychain & clash.meta's direct mode**
+
+cmd: `LD_PRELOAD=/usr/lib/libproxychains4.so iperf3 --client 127.0.0.1 -t 10`
+
+result: 
+
+```txt
+[  9]   0.00-1.00   sec  3.39 GBytes  29.1 Gbits/sec    0   3.93 MBytes
+[  9]   1.00-2.00   sec  2.67 GBytes  22.9 Gbits/sec    0   3.93 MBytes
+[  9]   2.00-3.00   sec  3.06 GBytes  26.3 Gbits/sec    0   3.93 MBytes
+[  9]   3.00-4.00   sec  2.99 GBytes  25.7 Gbits/sec    0   3.93 MBytes
+[  9]   4.00-5.00   sec  2.92 GBytes  25.1 Gbits/sec    0   3.93 MBytes
+[  9]   5.00-6.00   sec  3.10 GBytes  26.7 Gbits/sec    0   3.93 MBytes
+[  9]   6.00-7.00   sec  2.68 GBytes  23.1 Gbits/sec    0   4.12 MBytes
+[  9]   7.00-8.00   sec  2.72 GBytes  23.4 Gbits/sec    0   4.12 MBytes
 ```
 
 this is just quick verfication of the throughput leap brought by sk_msg's fastpath, to give a more comprehensive benchmark result, we may check other metrics:
@@ -133,6 +156,12 @@ iperf3 --client 127.0.0.1 -t 10  0.04s user 7.41s system 74% cpu 10.006 total
 
 ```txt
 iperf3 --client 127.0.0.1 -t 10  0.06s user 9.86s system 99% cpu 10.005 total
+```
+
+**with proxychain & clash.meta's direct mode**
+
+```txt
+LD_PRELOAD=/usr/lib/libproxychains4.so iperf3 --client 127.0.0.1 -t 10  0.05s user 8.02s system 80% cpu 10.008 total
 ```
 
 comparing the two scenerio, we can basicaly conclude: when the fastpath of sk_msg is enabled, cpu is generally 100% busy with the send/recv job, and that leads to a great throughput performance improvement.
